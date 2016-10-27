@@ -20,7 +20,13 @@
 
 #ifndef COMMON_H
 #define COMMON_H
+ 
+int	strong_random_init(void);
+void	strong_random_destroy(void);
+int	strong_random_reseed(void);
+int	strong_random_get(unsigned char *outbuf, const size_t outbuf_size);
 
+void	terminate(const int exit_code);
 char	*format_msg (const char *, va_list);
 void	error(const char *, ...);
 void	warning(const char *, ...);

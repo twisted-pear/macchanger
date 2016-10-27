@@ -85,7 +85,12 @@ mc_maclist_set_random_vendor_from_list (mac_t *mac, card_mac_list_item_t *list, 
 	int i, num = list_len;
 
 	/* Choose one randomly */
-	num = random()%num;
+	long int random_data;
+	if (strong_random_get((unsigned char *) &random_data,
+				sizeof(random_data)) != 0) {
+		fatal("Failed to get random vendor.");
+	}
+	num = labs(random_data)%num;
 
 	/* Copy the vendor MAC range */
 	for (i=0; i<3; i++) {
@@ -99,7 +104,12 @@ mc_maclist_set_random_vendor (mac_t *mac, mac_type_t type)
 {
 	int num;
 
-	num = random() % ( list_others_len + list_wireless_len );
+	long int random_data;
+	if (strong_random_get((unsigned char *) &random_data,
+				sizeof(random_data)) != 0) {
+		fatal("Failed to get random vendor.");
+	}
+	num = labs(random_data) % ( list_others_len + list_wireless_len );
 
 	switch (type) {
 	case mac_is_anykind:

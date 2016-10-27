@@ -68,19 +68,23 @@ mc_mac_random (mac_t *mac, unsigned char last_n_bytes, char set_bia)
 	 * MAC addresses and not allowed for network device:
 	 * x1:, x3:, x5:, x7:, x9:, xB:, xD: and xF:
 	 */
+	unsigned char random_data[6];
+	if (strong_random_get(random_data, sizeof(random_data)) != 0) {
+		fatal("Failed to get random MAC.");
+	}
 
 	switch (last_n_bytes) {
 	case 6:
 		/* 8th bit: Unicast / Multicast address
 		 * 7th bit: BIA (burned-in-address) / locally-administered
 		 */
-		mac->byte[0] = (random()%255) & 0xFC;
-		mac->byte[1] = random()%255;
-		mac->byte[2] = random()%255;
+		mac->byte[0] = random_data[0] & 0xFC;
+		mac->byte[1] = random_data[1];
+		mac->byte[2] = random_data[2];
 	case 3:
-		mac->byte[3] = random()%255;
-		mac->byte[4] = random()%255;
-		mac->byte[5] = random()%255;
+		mac->byte[3] = random_data[3];
+		mac->byte[4] = random_data[4];
+		mac->byte[5] = random_data[5];
 	}
 
 	/* Handle the burned-in-address bit

@@ -88,28 +88,6 @@ print_mac (const char *s, const mac_t *mac)
 }
 
 
-static void
-random_seed (void)
-{
-	int            fd;
-	struct timeval tv;
-	unsigned int   seed;
-
-	if ((fd = open("/dev/hwrng", O_RDONLY)) >= 0 ||
-	    (fd = open("/dev/random", O_RDONLY)) >= 0 ||
-	    (fd = open("/dev/urandom", O_RDONLY)) >= 0)
-	{
-		read (fd, &seed, sizeof(seed));
-		close (fd);
-	} else {
-		gettimeofday (&tv, NULL);
-		seed = (getpid() << 16) ^ tv.tv_sec ^ tv.tv_usec;
-	}
-
-	srandom(seed);
-}
-
-
 int
 main (int argc, char *argv[])
 {
@@ -159,7 +137,7 @@ main (int argc, char *argv[])
 				"This is free software; see the source for copying conditions.  There is NO\n"
 				"warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n",
 				VERSION);
-			exit (EXIT_OK);
+			terminate (EXIT_OK);
 			break;
 		case 'l':
 			print_list = 1;
@@ -193,35 +171,37 @@ main (int argc, char *argv[])
 		case '?':
 		default:
 			print_help();
-			exit (EXIT_OK);
+			terminate (EXIT_OK);
 			break;
 		}
 	}
 
 	/* Read the MAC lists */
 	if (mc_maclist_init() < 0) {
-		exit (EXIT_ERROR);
+		terminate (EXIT_ERROR);
 	}
 
 	/* Print list? */
 	if (print_list) {
 		mc_maclist_print(search_word);
-		exit (EXIT_OK);
+		terminate (EXIT_OK);
 	}
 
 	/* Get device name argument */
 	if (optind >= argc) {
 		print_usage();
-		exit (EXIT_OK);
+		terminate (EXIT_OK);
 	}
 	device_name = argv[optind];
 
 	/* Seed a random number generator */
-	random_seed();
+	if (strong_random_init() != 0) {
+		fatal("Failed to initialize strong RNG.");
+	}
 
 	/* Read the MAC */
 	if ((net = mc_net_info_new(device_name)) == NULL) {
-		exit (EXIT_ERROR);
+		terminate (EXIT_ERROR);
 	}
 	mac = mc_net_info_get_mac(net);
 	mac_permanent = mc_net_info_get_permanent_mac(net);
@@ -239,10 +219,10 @@ main (int argc, char *argv[])
 	mac_faked = mc_mac_dup (mac);
 
 	if (show) {
-		exit (EXIT_OK);
+		terminate (EXIT_OK);
 	} else if (set_mac) {
 		if (mc_mac_read_string (mac_faked, set_mac) < 0) {
-			exit (EXIT_ERROR);
+			terminate (EXIT_ERROR);
 		}
 	} else if (random) {
 		mc_mac_random (mac_faked, 6, set_bia);
@@ -258,7 +238,7 @@ main (int argc, char *argv[])
 	} else if (permanent) {
 		mac_faked = mc_mac_dup (mac_permanent);
 	} else {
-		exit (EXIT_OK); /* default to show */
+		terminate (EXIT_OK); /* default to show */
 	}
 
 	/* Set the new MAC */
@@ -284,5 +264,5 @@ main (int argc, char *argv[])
 	mc_net_info_free (net);
 	mc_maclist_free();
 
-	return (ret == 0) ? EXIT_OK : EXIT_ERROR;
+	terminate((ret == 0) ? EXIT_OK : EXIT_ERROR);
 }
